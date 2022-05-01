@@ -2,7 +2,7 @@
   "name": "moveodev/bill-dot-com",
   "description": "Wrapper to Bill.com API",
   "minimum-stability": "stable",
-  "license": "Apache 2.0 License",
+  "license": "MIT",
   "authors": [
     {
       "name": "Brian Jones",
