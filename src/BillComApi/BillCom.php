@@ -128,10 +128,16 @@ class BillCom
         $this->login();
         $this->billComInfo->session_id = $this->session_id;
         $client = new Client();
-        $response = $client->request('GET', 'https://api.bill.com/api/v2/MFAChallenge.json?sessionId=' . $this->billComInfo->session_id . '&devKey=' . $this->dev_key . '&data={"useBackup":'.$useBackup.'}', []);
+        $req = 'https://api.bill.com/api/v2/MFAChallenge.json?sessionId=' . $this->billComInfo->session_id . '&devKey=' . $this->dev_key . '&data={"useBackup":'.$useBackup.'}';
+        $response = $client->request('GET', $req, []);
         $statusCode = $response->getStatusCode();
+        $log = new BillComApiResponse();
+        $log->type = 'MFAChallenge';
+        $log->status_code = $statusCode;
+        $log->request  = $req;
         if ($statusCode == 200) {
             $challenge_response = json_decode($response->getBody()->getContents());
+            $log->response = json_encode($challenge_response);
             if ($challenge_response->response_message == 'Success') {
                 $challenge_id = $challenge_response->response_data->challengeId;
                 $this->billComInfo->challenge_id = $challenge_id;
@@ -143,6 +149,9 @@ class BillCom
         } else {
             return false;
         }
+        $log->created_at = (new DateTime())->setTimeZone(new DateTimeZone('America/New_York'));
+        $log->updated_at = (new DateTime())->setTimeZone(new DateTimeZone('America/New_York'));
+        $log->save();
         $this->billComInfo->save();
         return true;
     }
