@@ -156,8 +156,8 @@ class BillCom
         return true;
     }
 
-    public function createVendorBankAccount($partner, $bankData){
-        $this->MFAChallenge('false');
+    public function createVendorBankAccount($partner, $bankData, $useBackup = 'true'){
+        $this->MFAChallenge($useBackup);
         sleep(30);
         $billComInfo = BillComApiData::find(env('BILL_COM_API_DATA_ID'));
         $isPersonal  = $bankData->is_personal == 1 ? 'true' : 'false';
