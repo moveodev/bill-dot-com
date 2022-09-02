@@ -200,6 +200,34 @@ class BillCom
     }
 
 
+    public function payBills($bills){
+        $billComInfo = BillComApiData::find(env('BILL_COM_API_DATA_ID'));
+        $req = [
+            'form_params' => [
+                'devKey' => $billComInfo->dev_key,
+                'sessionId' => $billComInfo->trusted_session_id,
+                'data' => $bills
+            ]
+        ];
+        $client = new Client();
+        $res = $client->post('https://api.bill.com/api/v2/PayBills.json', $req);
+        $responseData = json_decode($res->getBody()->getContents());
+
+        $log = new BillComApiResponse();
+        $log->type = 'PAY BILLS';
+        $log->status_code = $res->getStatusCode();
+        $log->request  = json_encode($req);
+        $log->response = json_encode($responseData);
+        $log->created_at = (new DateTime())->setTimeZone(new DateTimeZone('America/New_York'));
+        $log->updated_at = (new DateTime())->setTimeZone(new DateTimeZone('America/New_York'));
+        $log->save();
+
+        if ($res->getStatusCode() == 200) {
+            return $responseData;
+        }
+        return null;
+    }
+
     public function MFAStatus() {
         $client = new Client();
         $isTrusted = false;
