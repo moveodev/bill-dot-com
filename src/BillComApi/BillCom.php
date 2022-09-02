@@ -270,14 +270,14 @@ class BillCom
         $this->token_code = $this->billComInfo->code;
     }
 
-    public function ListPayments($x) {
+    public function ListPayments($x, $disbursementStatus = 3) {
         if (empty($this->session_id)) {
             $this->login();
             $this->billComInfo->session_id = $this->session_id;
         }
         $client = new Client();
         $start = $x*100;
-        $response = $client->request('GET', 'https://api.bill.com/api/v2/ListPayments.json?sessionId='.$this->billComInfo->session_id.'&devKey='.$this->dev_key.'&data={"disbursementStatus":"3","start":'.$start.',"max":100}', []);
+        $response = $client->request('GET', 'https://api.bill.com/api/v2/ListPayments.json?sessionId='.$this->billComInfo->session_id.'&devKey='.$this->dev_key.'&data={"disbursementStatus":"'.$disbursementStatus.'","start":'.$start.',"max":100}', []);
         $statusCode = $response->getStatusCode();
         if ($statusCode == 200) {
             $response = json_decode($response->getBody()->getContents());
