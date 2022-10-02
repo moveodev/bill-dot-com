@@ -96,7 +96,6 @@ class BillCom
     private $session_id = null;
     private $challenge_id = null;
     private $mfa_id = null;
-    private $trusted_session_id = null;
     private $billComInfo = null;
 
     /**
@@ -112,7 +111,6 @@ class BillCom
     {
         $this->billComInfo = BillComApiData::find(env('BILL_COM_API_DATA_ID'));
         $this->dev_key = $this->billComInfo->dev_key;
-        $this->trusted_session_id = $this->billComInfo->trusted_session_id;
         $this->password = $this->billComInfo->password;
         $this->user_name = $this->billComInfo->username;
         $this->host = "https://api.bill.com/api/v2/";
@@ -156,6 +154,20 @@ class BillCom
         return true;
     }
 
+    public function checkSessionStatus() {
+        $client = new Client();
+        $response = $client->request('GET', 'https://api.bill.com/api/v2/Crud/Read/Vendor.json?sessionId='.$this->billComInfo->session_id.'&devKey='.$this->dev_key.'&data={"id":"00901TEZZSDFMK24cmrv"}', []);
+        $statusCode = $response->getStatusCode();
+        if ($statusCode == 200) {
+            $resp = json_decode($response->getBody()->getContents());
+            if ($resp->response_message == 'Success') {
+                $this->session_id = $this->billComInfo->session_id;
+                return true;
+            }
+        }
+        return false;
+    }
+
     public function createVendorBankAccount($partner, $bankData, $useBackup = 'true'){
         $status = $this->MFAStatus();
         if (!$status) {
@@ -168,7 +180,7 @@ class BillCom
         $req = [
             'form_params' => [
                 'devKey' => $billComInfo->dev_key,
-                'sessionId' => $billComInfo->trusted_session_id,
+                'sessionId' => $billComInfo->session_id,
                 'data' => '{
                     "obj" : {
                             "entity":"VendorBankAccount",
@@ -208,7 +220,7 @@ class BillCom
         $req = [
             'form_params' => [
                 'devKey' => $billComInfo->dev_key,
-                'sessionId' => $billComInfo->trusted_session_id,
+                'sessionId' => $billComInfo->session_id,
                 'data' => $bills
             ]
         ];
@@ -233,16 +245,15 @@ class BillCom
 
     public function MFAStatus() {
         $client = new Client();
-        $isTrusted = false;
         $response = $client->request('GET', 'https://api.bill.com/api/v2/MFAStatus.json?sessionId='.$this->billComInfo->session_id.'&devKey='.$this->dev_key.'&data={"mfaId":"'.$this->mfa_id.'","deviceId":"'.$this->device_id.'"}', []);
         $statusCode = $response->getStatusCode();
         if ($statusCode == 200) {
             $resp = json_decode($response->getBody()->getContents());
             if ($resp->response_message == 'Success') {
-                $isTrusted = $resp->response_data->isTrusted;
+                return $resp->response_data->isTrusted;
             }
         }
-        return $isTrusted;
+        return false;
     }
 
     public function MFAAuthenticate() {
@@ -255,7 +266,7 @@ class BillCom
             if ($challenge_response->response_message == 'Success') {
                 $mfa_id = $challenge_response->response_data->mfaId;
                 $this->billComInfo->mfa_id = $mfa_id;
-                $this->billComInfo->trusted_session_id = $this->billComInfo->session_id;
+                $this->billComInfo->session_id = $this->billComInfo->session_id;
                 $this->billComInfo->save();
                 $this->mfa_id = $this->billComInfo->mfa_id;
             } else {
@@ -316,26 +327,30 @@ class BillCom
         } else {
             // use pre-existing $this->org_id
         }
-        $result = $this->do_request(
-            $this->host . "Login.json",
-            array(
-                'userName' => $this->user_name,
-                'password' => $this->password,
-                'orgId' => $this->org_id,
-                'devKey' => $this->dev_key,
-            )
-        );
-        if ($result->succeeded()) {
-            $response_data = $result->get_data();
-            $this->session_id = $response_data['sessionId'];
-            return $result;
-        } else {
-            throw new BillComException(sprintf(
-                "Error when logging in: userName='%s', ordId='%s', double check password and devKey. response details:\n%s",
-                $this->user_name,
-                $this->org_id,
-                var_export($result, true)
-            ));
+        if (!$this->checkSessionStatus()) {
+            $result = $this->do_request(
+                $this->host . "Login.json",
+                array(
+                    'userName' => $this->user_name,
+                    'password' => $this->password,
+                    'orgId' => $this->org_id,
+                    'devKey' => $this->dev_key,
+                )
+            );
+            if ($result->succeeded()) {
+                $response_data = $result->get_data();
+                $this->session_id = $response_data['sessionId'];
+                $this->billComInfo->session_id = $this->session_id;
+                $this->billComInfo->save();
+                return $result;
+            } else {
+                throw new BillComException(sprintf(
+                    "Error when logging in: userName='%s', ordId='%s', double check password and devKey. response details:\n%s",
+                    $this->user_name,
+                    $this->org_id,
+                    var_export($result, true)
+                ));
+            }
         }
     }
 
