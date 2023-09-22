@@ -190,7 +190,8 @@ class BillCom
                             "routingNumber":"' . $bankData->routing_number . '",
                             "usersId": "00601KFFUCUIVKY3zp1b",
                             "isSavings":' . $isSavings . ',
-                            "isPersonalAcct":' . $isPersonal . '
+                            "isPersonalAcct":' . $isPersonal . ',
+                            "paymentCurrency": "USD",
                         }
                     }'
             ]
