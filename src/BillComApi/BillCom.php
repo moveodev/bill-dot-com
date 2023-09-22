@@ -191,7 +191,7 @@ class BillCom
                             "usersId": "00601KFFUCUIVKY3zp1b",
                             "isSavings":' . $isSavings . ',
                             "isPersonalAcct":' . $isPersonal . ',
-                            "paymentCurrency": "USD",
+                            "paymentCurrency": "USD"
                         }
                     }'
             ]
