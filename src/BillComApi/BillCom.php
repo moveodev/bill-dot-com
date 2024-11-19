@@ -29,8 +29,8 @@
  */
 namespace BillComApi;
 
-use App\BillComApiData;
-use App\BillComApiResponse;
+use App\Models\BillComApiData;
+use App\Models\BillComApiResponse;
 use DateTime;
 use DateTimeZone;
 use GuzzleHttp\Client;
