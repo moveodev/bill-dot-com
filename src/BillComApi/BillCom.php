@@ -29,8 +29,8 @@
  */
 namespace BillComApi;
 
-use App\Models\BillComApiData;
-use App\Models\BillComApiResponse;
+use Moveo\MoveoPackage\Models\BillComApiData;
+use Moveo\MoveoPackage\Models\BillComApiResponse;
 use DateTime;
 use DateTimeZone;
 use GuzzleHttp\Client;
